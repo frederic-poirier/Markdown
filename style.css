@@ -1,0 +1,50 @@
+*, *::before, *::after {box-sizing: border-box;}
+* {margin: 0;}
+body {line-height: 1.5; -webkit-font-smoothing: antialiased;}
+img, picture, video, canvas, svg {display: block; max-width: 100%;}
+input, button, textarea, select {font: inherit;}
+p, h1, h2, h3, h4, h5, h6 {overflow-wrap: break-word;}
+#root, #__next {isolation: isolate;}
+
+
+
+:root {
+    font-family: Inter, sans-serif;
+    font-feature-settings: 'liga' 1, 'calt' 1; /* fix for Chrome */
+    --font-size: 1rem;
+
+    --clr-text: hsl(0, 0%, 20%);
+    --clr-bg: hsl(0, 0%, 100%);
+    --clr-border: hsl(0, 0%, 90%);
+    --clr-card-bg: hsl(0, 0%, 95%);
+    --clr-primary: hsla(60, 100%, 50%, 0.5);
+  }
+
+  @supports (font-variation-settings: normal) {
+    :root { font-family: InterVariable, sans-serif; }
+  }
+
+  #editor {
+    color: var(--clr-text);
+    border: 1px solid var(--clr-border);
+    max-width: 60ch;
+    margin: auto;
+    margin-top: 10%;
+    border-radius: 0.25em;
+    padding: 0.25em;
+  }
+
+  #editor:focus-within {
+    outline: 1px solid var(--clr-primary);
+  }
+
+  *::selection {
+    background-color: var(--clr-primary);
+  }
+
+  input {
+    background-color: #eaeaea;
+    border: none;
+    border-radius: 0.25em;
+    width: fit-content;
+  }
