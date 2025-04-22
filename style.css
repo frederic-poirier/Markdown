@@ -20,6 +20,11 @@ p, h1, h2, h3, h4, h5, h6 {overflow-wrap: break-word;}
     --clr-primary: hsla(60, 100%, 50%, 0.5);
   }
 
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.035em;
+    padding-block: 0.2em 0.5em;
+  }
+
   @supports (font-variation-settings: normal) {
     :root { font-family: InterVariable, sans-serif; }
   }
@@ -27,7 +32,7 @@ p, h1, h2, h3, h4, h5, h6 {overflow-wrap: break-word;}
   #editor {
     color: var(--clr-text);
     border: 1px solid var(--clr-border);
-    max-width: 60ch;
+    width: min(60ch, calc(100vw - 2rem));
     margin: auto;
     margin-top: 10%;
     border-radius: 0.25em;
@@ -43,8 +48,56 @@ p, h1, h2, h3, h4, h5, h6 {overflow-wrap: break-word;}
   }
 
   input {
-    background-color: #eaeaea;
     border: none;
-    border-radius: 0.25em;
-    width: fit-content;
+    outline: none;
+    background: none;
   }
+
+  span:has(input) {
+    display: inline-block;
+    border: var(--clr-border) 1px solid;
+    outline: none;
+    background-color: var(--clr-card-bg);
+    border-radius: 0.25em;
+  }
+
+
+u {
+  font-family: monospace;
+  font-size: var(--font-size);
+  background-color: var(--clr-card-bg);
+  border-radius: 0.25em;
+  padding: 0.25em;
+  text-decoration: none;
+}
+
+.placeholder::after {
+  content: 'Type here';
+  color: var(--clr-card-bg);
+  display: inline;
+}
+
+li.placeholder::after {content: 'List items';}
+[data-type="task-list"] {
+  list-style: none;
+  position: relative;
+
+  input {
+    position: absolute;
+    left: 1.25em;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}
+
+.placeholder br {
+  display: none;
+}
+
+
+pre {
+  background-color: var(--clr-card-bg);
+  border-radius: 0.25em;
+  border: 1px solid var(--clr-border);
+  padding: 0.5em;
+}
