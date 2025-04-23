@@ -56,14 +56,8 @@ const componentDefinitions = {
         blockMd: "```",
         mdClose: "```",
         shortcut: "```",
+        caret: true,
         attributes: {},
-        children: [
-          {
-            tag: "code",
-            caret: true,
-            attributes: {}
-          }
-        ]
       },
       blockquote: {
         tag: "blockquote",
@@ -141,13 +135,16 @@ const componentDefinitions = {
         children: [
           {
             tag: "li",
-            caret: true,
             attributes: {},
             children: [
               {
                 tag: "input",
                 attributes: { type: "checkbox" }
               },
+              {
+                tag: "label",
+                caret: true,
+              }
             ]
           }
         ]
@@ -188,24 +185,27 @@ const componentDefinitions = {
 
 editor.addEventListener("beforeinput", (event) => {
     const data = event.data;
-    const selection = window.getSelection();
-    const node = selection.focusNode;
-    const offset = selection.startOffset;
+    const range = event.getTargetRanges()[0];
+    const node = range.startContainer;
+    const startOffset = range.startOffset;
+    const endOffset = range.endOffset;
 
-    let prevChar = isWhitespaceOrPunct(node?.textContent.charAt(offset - 1));
-    let nextChar = isWhitespaceOrPunct(node?.textContent.charAt(offset));
+    let prevChar = isWhitespaceOrPunct(node?.textContent.charAt(startOffset - 1));
+    let nextChar = isWhitespaceOrPunct(node?.textContent.charAt(startOffset));
 
+    console.log(node)
+    if (node.textContent.length > 1 && startOffset === 0 && endOffset === node.textContent.length && !data) node.textContent = "/u200b";
+    if (node.textContent.indexOf("\u200b") !== -1) node.textContent = node.textContent.replace(/\u200b/g, "");
     if (data === "/" && nextChar && prevChar) openCommandPalette(event)
     if (data === " ") {
         if (!node || node.nodeType !== Node.TEXT_NODE) return;
-        const text = node.textContent.slice(0, offset) + data;
+        const text = node.textContent.slice(0, startOffset) + data;
         const match = matchShortcut(text);
       
         if (match) {
           event.preventDefault();
           const newNode = renderComponent(match.def);
           node.parentNode.replaceWith(newNode);
-          newNode.focus();
         }
     }
 
@@ -255,11 +255,14 @@ function matchShortcut(text) {
   
     // Place caret at the end with a final <br>
     if (def.caret) {
-      const br = document.createElement("br");
-      el.appendChild(br);
+      const zws = document.createTextNode("\u200B"); // Zero-width space
+      el.appendChild(zws);
   
       const range = document.createRange();
-      range.setStart(br, 0);
+      console.log("el", el)
+      console.log("el.lastChild", el.lastChild)
+      range.setStart(zws, 1);
+      console.log('I set the caret after the last child')
     }
   
     return el;
