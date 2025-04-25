@@ -9,7 +9,7 @@ p, h1, h2, h3, h4, h5, h6 {overflow-wrap: break-word;}
 
 
 :root {
-    font-family: Inter, sans-serif;
+    font-family: InterVariable, sans-serif;
     font-feature-settings: 'liga' 1, 'calt' 1; /* fix for Chrome */
     --font-size: 1rem;
 
@@ -20,9 +20,35 @@ p, h1, h2, h3, h4, h5, h6 {overflow-wrap: break-word;}
     --clr-primary: hsla(60, 100%, 50%, 0.5);
   }
 
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --clr-text: hsl(0, 0%, 90%);
+      --clr-bg: hsl(0, 0%, 12.5%);
+      --clr-border: hsl(0, 0%, 20%);
+      --clr-card-bg: hsl(0, 0%, 15%);
+      --clr-primary: hsla(60, 100%, 50%, 0.5);
+    }
+  }
+
+  body {
+    background-color: var(--clr-bg);
+  }
+
   h1, h2, h3, h4, h5, h6 {
     letter-spacing: -0.035em;
     padding-block: 0.2em 0.5em;
+  }
+
+  @font-face {
+    font-family: InterVariable;
+    font-style: normal;
+    src: url(font/InterVariable.woff2);
+  }
+
+  @font-face {
+    font-family: InterVariable;
+    font-style: italic;
+    src: url(font/InterVariable-Italic.woff2);
   }
 
   @supports (font-variation-settings: normal) {
@@ -31,16 +57,12 @@ p, h1, h2, h3, h4, h5, h6 {overflow-wrap: break-word;}
 
   #editor {
     color: var(--clr-text);
-    border: 1px solid var(--clr-border);
+    outline: none;
     width: min(60ch, calc(100vw - 2rem));
     margin: auto;
     margin-top: 10%;
     border-radius: 0.25em;
     padding: 0.25em;
-  }
-
-  #editor:focus-within {
-    outline: 1px solid var(--clr-primary);
   }
 
   *::selection {
@@ -100,4 +122,28 @@ pre {
   border-radius: 0.25em;
   border: 1px solid var(--clr-border);
   padding: 0.5em;
+}
+
+
+[data-write="true"] {
+  background-color: var(--clr-card-bg);
+  border-radius: 0.25em;
+  margin: 0.25em;
+  display: block;
+}
+
+[data-type='checklist'] {
+  list-style: none;
+  position: relative;
+  padding-left: 1.5em;
+
+  li {
+    position: relative;
+  }
+  input {
+    position: absolute;
+    left: -1.25em;
+    top: 50%;
+    transform: translateY(-50%);
+  }
 }

@@ -1,5 +1,13 @@
 const editor = document.getElementById("editor");
+const menu = document.getElementById("menu");
 const isWhitespaceOrPunct = (char) => !char || /\s|[.,!?;:'"(){}[\]]/.test(char);
+let zwsNodes = [];
+let zwsTimeout;
+
+
+const formatEvent = ['formatBold', 'formatItalic', 'formatUnderline', 'formatRemove']
+const blockEvent = ['insertParagraph', 'insertOrderedListItem', 'insertUnorderedListItem', 'insertHorizontalRule']
+
 const componentDefinitions = {
     blocks: {
       paragraph: {
@@ -30,73 +38,6 @@ const componentDefinitions = {
         shortcut: "### ",
         attributes: {}
       },
-      heading4: {
-        tag: "h4",
-        md: "#### ",
-        caret: true,
-        shortcut: "#### ",
-        attributes: {}
-      },
-      heading5: {
-        tag: "h5",
-        md: "##### ",
-        caret: true,
-        shortcut: "##### ",
-        attributes: {}
-      },
-      heading6: {
-        tag: "h6",
-        md: "###### ",
-        caret: true,
-        shortcut: "###### ",
-        attributes: {}
-      },
-      codeBlock: {
-        tag: "pre",
-        blockMd: "```",
-        mdClose: "```",
-        shortcut: "```",
-        caret: true,
-        attributes: {},
-      },
-      blockquote: {
-        tag: "blockquote",
-        blockMd: "> ",
-        caret: true,
-        shortcut: "> ",
-        attributes: {}
-      },
-      horizontalRule: {
-        tag: "hr",
-        md: "---",
-
-        shortcut: "---",
-        selfClosing: true,
-        attributes: {}
-      }
-    },
-  
-    inlines: {
-      bold: {
-        tag: "b",
-        md: "**",
-        attributes: {}
-      },
-      italic: {
-        tag: "i",
-        md: "*",
-        attributes: {}
-      },
-      code: {
-        tag: "u", // Note: en général <code> et non <u> pour inline code
-        md: "`",
-        attributes: {}
-      },
-      link: {
-        tag: "a",
-        md: "[text](url)",
-        attributes: { href: "" }
-      }
     },
   
     lists: {
@@ -130,8 +71,9 @@ const componentDefinitions = {
       },
       task: {
         tag: "ul",
-        blockMd: "[ ] ",
-        attributes: { "data-type": "task-list" },
+        blockMd: "- [ ] ",
+        shortcut: "[] ",
+        attributes: {},
         children: [
           {
             tag: "li",
@@ -150,180 +92,131 @@ const componentDefinitions = {
         ]
       }
     },
-  
-    dynamics: {
-      mention: {
-        tag: "span",
-        md: "@",
-        attributes: { "data-type": "mention" },
-        js: {
-          onMount: "initMention"
-        }
-      },
-      image: {
-        tag: "img",
-        md: "![alt](src)",
-        selfClosing: true,
-        attributes: {
-          src: "",
-          alt: ""
-        }
-      },
-      embed: {
-        tag: "div",
-        md: "{{embed:url}}",
-        attributes: {
-          "data-url": ""
-        },
-        js: {
-          onMount: "loadEmbed"
-        }
-      }
-    }
   };
+  
+  function getFirst(a, b) {
+    return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_PRECEDING ? b : a;
+  }
   
 
 editor.addEventListener("beforeinput", (event) => {
-    const data = event.data;
-    const range = event.getTargetRanges()[0];
-    const node = range.startContainer;
-    const startOffset = range.startOffset;
-    const endOffset = range.endOffset;
+  const range = event.getTargetRanges()[0];
+  const {startContainer, startOffset, endContainer, endOffset } = range;
+  const data = event.data;
+  const type = event.inputType;
+  console.log(range)
+  if (zwsNodes) scheduleZwsCleanup(zwsNodes);
+  let node = startContainer.nodeType === 3 ? startContainer.parentNode : startContainer;
+  
+  if (!node.getAttribute("data-write") && range.collapsed) {
+    let block = node.closest(".block > *");
+    let writeNode = block.querySelector("[data-write='true']");
+    console.log(writeNode.compareDocumentPosition(node))
+    let position = getFirst(node, writeNode) === node ? 0 : writeNode.textContent.length;
+    setCaretPosition(writeNode, "setStart", position);
+  }
 
-    let prevChar = isWhitespaceOrPunct(node?.textContent.charAt(startOffset - 1));
-    let nextChar = isWhitespaceOrPunct(node?.textContent.charAt(startOffset));
+  if (data === "/" && range.collapsed) {
+    const prev = isWhitespaceOrPunct(startContainer.textContent.charAt(startOffset - 1));
+    const next = isWhitespaceOrPunct(startContainer.textContent.charAt(startOffset)); 
+    if (prev && next) openCommand(range, event);
+  }
 
-    console.log(node)
-    if (node.textContent.length > 1 && startOffset === 0 && endOffset === node.textContent.length && !data) node.textContent = "/u200b";
-    if (node.textContent.indexOf("\u200b") !== -1) node.textContent = node.textContent.replace(/\u200b/g, "");
-    if (data === "/" && nextChar && prevChar) openCommandPalette(event)
-    if (data === " ") {
-        if (!node || node.nodeType !== Node.TEXT_NODE) return;
-        const text = node.textContent.slice(0, startOffset) + data;
-        const match = matchShortcut(text);
-      
-        if (match) {
-          event.preventDefault();
-          const newNode = renderComponent(match.def);
-          node.parentNode.replaceWith(newNode);
-        }
-    }
-
+  if (!range.collapsed && !formatEvent.includes(type)) rangeManager(event);
+  if (blockEvent.includes(type)) blockManager(event);
 })
 
+function openCommand(range, event) {
+  event.preventDefault();
+  menu.showPopover();
+}
 
+function rangeManager(event) {
+  const eventRange = event.getTargetRanges()[0];
+  const {startContainer, startOffset, endContainer, endOffset } = eventRange;
+  let action;
 
-function matchShortcut(text) {
-    const categories = ['blocks', 'lists']; // Les catégories à analyser
-    for (const category of categories) {
-      const defs = componentDefinitions[category];
-      for (const key in defs) {
-        const def = defs[key];
-        const shortcut = def.shortcut || def.blockMd || def.md;
-        if (shortcut && text.startsWith(shortcut)) {
-          return { def, category, key };
-        }
-      }
-    }
-    return null;
-  }
-  
+  if (startContainer !== endContainer) action = "internode";
+  else if (startOffset === 0 && endOffset === endContainer.textContent.length && !event.data) action = "fullnode";
+  else return;
+  console.log(action)
 
-  function renderComponent(def) {
-    const el = document.createElement(def.tag);
-  
-    if (def.attributes) {
-      for (const [key, value] of Object.entries(def.attributes)) {
-        if (value !== undefined) el.setAttribute(key, value);
-      }
-    }
-  
-    if (def.selfClosing) return el;
-  
-    // Render children recursively
-    if (def.children && def.children.length > 0) {
-      for (const childDef of def.children) {
-        const child = renderComponent(childDef);
-        el.appendChild(child);
-      }
-    }
-  
-    // Add placeholder content if needed
-    if (!el.hasChildNodes() && !def.children && !def.selfClosing) {
-      el.innerHTML = def.content || "";
-    }
-  
-    // Place caret at the end with a final <br>
-    if (def.caret) {
-      const zws = document.createTextNode("\u200B"); // Zero-width space
-      el.appendChild(zws);
-  
-      const range = document.createRange();
-      console.log("el", el)
-      console.log("el.lastChild", el.lastChild)
-      range.setStart(zws, 1);
-      console.log('I set the caret after the last child')
-    }
-  
-    return el;
-  }
-  
+  const range = document.createRange();
+  range.setStart(startContainer, startOffset);
+  range.setEnd(endContainer, endOffset);
+  event.preventDefault();
+  if (action === "internode") {
+    range.deleteContents(); // Supprime le contenu sélectionné
 
-
-
-
-
-
-  const isEmptyNode = (el) => {
-    if (!el || el.nodeType !== 1) return false;
-  
-    const text = el.textContent.trim();
-    const children = [...el.children];
-    const onlyBr = children.length === 1 && children[0].tagName === 'BR';
-    const onlyBrAndInput = (
-      children.length === 2 &&
-      children.some(c => c.tagName === 'BR') &&
-      children.some(c => c.tagName === 'INPUT')
-    );
-  
-    return !text && (onlyBr || onlyBrAndInput);
-  };
-  
-  const updatePlaceholderClass = (el) => {
-    if (!el || !el.closest('[contenteditable]')) return;
-  
-    if (isEmptyNode(el)) {
-      el.classList.add('placeholder');
+    startContainer.textContent += (event.data || "") + endContainer.textContent;
+    endContainer.remove(); // Supprime le nœud de fin
+    setCaretPosition(startContainer, "setStart", event.data ? startOffset + 1 : startOffset);
+  } else if (action === "fullnode") {
+      const block = startContainer.parentNode.closest(".block > *");
+      const previous = block.previousElementSibling.querySelector("[data-write='true']");
+    if (previous && startContainer.textContent === "\u200B") {
+      block.remove();
+      setCaretPosition(previous, "setStart", previous.textContent.length);
     } else {
-      el.classList.remove('placeholder');
+      console.log("add")
+      startContainer.textContent = "\u200B";
+      zwsNodes.push(startContainer);
+      setCaretPosition(startContainer, "setStart", 1);
     }
-  };
-  
-  const observer = new MutationObserver((mutationsList) => {
-    for (const mutation of mutationsList) {
-      const targets = new Set();
-  
-      if (mutation.type === 'childList') {
-        mutation.addedNodes.forEach(node => {
-          if (node.nodeType === 1) targets.add(node);
-        });
-        targets.add(mutation.target);
+  }
+}
+
+function blockManager(event) {
+  const eventRange = event.getTargetRanges()[0];
+  const {startContainer, startOffset, endContainer, endOffset } = eventRange;
+  const block = startContainer.target.closest(".block > *");
+
+  const blockType = block.getAttribute("data-type");
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function scheduleZwsCleanup(zwsNode) {
+  clearTimeout(zwsTimeout);
+  zwsTimeout = setTimeout(() => {
+    zwsManager(zwsNode);
+  }, 1000);
+}
+
+function zwsManager(zwsNodes) {
+  zwsNodes.forEach(node => {
+    if (node.textContent.length > 1) {
+      let sel = window.getSelection();
+      if (sel.focusNode === node) {
+        let position = sel.focusOffset > node.textContent.indexOf("\u200B") ? sel.focusOffset - 1 : sel.focusOffset;
+        node.textContent = node.textContent.replace(/\u200B/g, "");
+        setCaretPosition(node, "setStart", position);
+      } else {
+        node.textContent = node.textContent.replace(/\u200B/g, "");
       }
-  
-      if (mutation.type === 'characterData') {
-        targets.add(mutation.target.parentNode);
-      }
-  
-      targets.forEach(updatePlaceholderClass);
+      zwsNodes = zwsNodes.filter(n => n !== node);
     }
   });
-  
-  // Start observing
-  const root = document.querySelector('[contenteditable]');
-  observer.observe(root, { childList: true, characterData: true, subtree: true });
-  
-  // Initial pass
-  [...root.querySelectorAll('*')].forEach(updatePlaceholderClass);
+}
+
+
   
   
 
@@ -363,7 +256,8 @@ function setCaretPosition(node, method, position) {
     if (!node) throw new Error("Node does not exist");
     let range = document.createRange();
     let sel = window.getSelection();
-
+    if (node.nodeType !== Node.TEXT_NODE) node = node.childNodes[0] || node;
+    if (position > node.length) position = node.length;
     
     if (['setStart', 'setEnd'].includes(method)) {
       range[method](node, position);
