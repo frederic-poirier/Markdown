@@ -13,6 +13,7 @@ p, h1, h2, h3, h4, h5, h6 {overflow-wrap: break-word;}
     font-feature-settings: 'liga' 1, 'calt' 1; /* fix for Chrome */
     --font-size: 1rem;
 
+    --clr-subtle: hsl(0, 0%, 50%);
     --clr-text: hsl(0, 0%, 20%);
     --clr-bg: hsl(0, 0%, 100%);
     --clr-border: hsl(0, 0%, 90%);
@@ -22,6 +23,7 @@ p, h1, h2, h3, h4, h5, h6 {overflow-wrap: break-word;}
 
   @media (prefers-color-scheme: dark) {
     :root {
+      --clr-subtle: hsl(0, 0%, 50%);
       --clr-text: hsl(0, 0%, 90%);
       --clr-bg: hsl(0, 0%, 12.5%);
       --clr-border: hsl(0, 0%, 20%);
@@ -125,25 +127,91 @@ pre {
 }
 
 
-[data-write="true"] {
-  background-color: var(--clr-card-bg);
-  border-radius: 0.25em;
-  margin: 0.25em;
-  display: block;
-}
 
-[data-type='checklist'] {
+[data-type='checkbox'] {
   list-style: none;
-  position: relative;
   padding-left: 1.5em;
 
   li {
     position: relative;
   }
+
   input {
     position: absolute;
     left: -1.25em;
     top: 50%;
     transform: translateY(-50%);
+  }
+}
+
+#menu {
+  background-color: var(--clr-card-bg);
+  color: var(--clr-text);
+  border-radius: 0.5em;
+  border: 1px solid var(--clr-border);
+  position-anchor: --menu-item;
+  position: absolute;
+  left: anchor(left);
+  top: anchor(bottom);
+  transform: translateY(0.5em);
+  width: 250px;
+
+  scrollbar-color: var(--clr-border) var(--clr-card-bg);
+
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  button {
+    font-family: monospace;
+    background-color: var(--clr-card-bg);
+    color: var(--clr-text);
+    border: none;
+    padding: 0.5em 0.25em;
+    border-radius: 0.25em;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+
+    &:hover {
+      background-color: var(--clr-border);
+    }
+  }	
+}
+
+span.menu-search {
+  anchor-name: --menu-item;
+  display: inline-block;
+  padding: 0.15em 0.5em;
+  border-radius: 0.25em;
+  cursor: pointer;
+  background-color: var(--clr-card-bg);
+  color: var(--clr-text);
+  transition: background-color 0.2s ease-in-out;
+}
+
+.list {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  gap: 1em;
+  overflow-x: scroll;
+  scroll-snap-align: start;
+  scroll-snap-type: x mandatory;
+
+  li {
+    scrollbar-width: none;
+    margin-block: 1em;
+    padding: 0.5em;
+    min-width: 300px;
+    min-height: 150px;
+    overflow-y: scroll;
+    background-color: var(--clr-card-bg);
+    border-radius: 0.25em;
   }
 }

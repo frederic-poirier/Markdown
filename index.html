@@ -15,23 +15,24 @@
 <body>
 
 <div id="editor" contenteditable="true" spellcheck="false" class="block">
-<h1 data-write="true">Simple applis de note</h1>
-<p data-write="true">Une bibliothèque légère de rendu Markdown en temps réel pour le web, axée sur une manipulation fine du DOM. Ce projet offre une édition fluide de Markdown avec une prédiction instantanée des changements, tout en gardant une structure basée sur le DOM, sans besoin de re-parsing global.</p>
-  <ul class="block" data-type="checklist">
-    <li><input type="checkbox"><label data-write="true">task 1</label></li>
-    <li><input type="checkbox"><label data-write="true">task 1</label></li>
-    <li><input type="checkbox"><label data-write="true">task 1</label></li>
-    <li><input type="checkbox"><label data-write="true">task 1</label></li>
-  </ul>
-  <p data-write="true">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec a diam lectus. Sed sit amet ipsum mauris.</p>	
+<h1 data-editable>Simple applis de note</h1>
+<p data-editable>Une bibliothèque légère de rendu Markdown en temps réel pour le web, axée sur une manipulation fine du DOM. Ce projet offre une édition fluide de Markdown avec une prédiction instantanée des changements, tout en gardant une structure basée sur le DOM, sans besoin de re-parsing global.</p>
+<p data-editable>&ZeroWidthSpace;</p>
+<p data-editable>Lorem ipsum dolor sit amet, consectetur elit. Donec a diam lectus. Sed sit amet ipsum mauris.</p>	
 </div>
 <div id="menu" popover>
   <ul>
-    <li>Heading 1</li>
-    <li>Heading 2</li>
-    <li>Heading 3</li>
+    <li><button>Heading 1</button></li>
+    <li><button>Heading 2</button></li>
+    <li><button>Heading 3</button></li>
+    <li><button>Heading 4</button></li>
+    <li><button>Heading 5</button></li>
+    <li><button>Heading 6</button></li>
+    <li><button>Unordered list</button></li>
+    <li><button>Ordered list</button></li>
+    <li><button>Task list</button></li>
   </ul>
 </div>
-<script  src="editor.js"></script>
+<script  src="editor.js"></script> 
 </body>
 </html>

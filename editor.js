@@ -1,224 +1,137 @@
 const editor = document.getElementById("editor");
 const menu = document.getElementById("menu");
+const arrow = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']
+let savedX = null;
+let editablesNodes = Array.from(document.querySelectorAll("[data-editable]"));
 const isWhitespaceOrPunct = (char) => !char || /\s|[.,!?;:'"(){}[\]]/.test(char);
-let zwsNodes = [];
-let zwsTimeout;
 
-
-const formatEvent = ['formatBold', 'formatItalic', 'formatUnderline', 'formatRemove']
-const blockEvent = ['insertParagraph', 'insertOrderedListItem', 'insertUnorderedListItem', 'insertHorizontalRule']
-
-const componentDefinitions = {
-    blocks: {
-      paragraph: {
-        tag: "p",
-        md: "",
-        caret: true,
-        shortcut: null,
-        attributes: {}
-      },
-      heading1: {
-        tag: "h1",
-        md: "# ",
-        caret: true,
-        shortcut: "# ",
-        attributes: {}
-      },
-      heading2: {
-        tag: "h2",
-        md: "## ",
-        caret: true,
-        shortcut: "## ",
-        attributes: {}
-      },
-      heading3: {
-        tag: "h3",
-        md: "### ",
-        caret: true,
-        shortcut: "### ",
-        attributes: {}
-      },
-    },
-  
-    lists: {
-      unordered: {
-        tag: "ul",
-        blockMd: "- ",
-        shortcut: "- ",
-        attributes: {},
-        children: [
-          {
-            tag: "li",
-            caret: true,
-            attributes: {},
-            content: ""
-          }
-        ]
-      },
-      ordered: {
-        tag: "ol",
-        blockMd: "1. ",
-        shortcut: "1. ",
-        attributes: {},
-        children: [
-          {
-            tag: "li",
-            caret: true,
-            attributes: {},
-            content: ""
-          }
-        ]
-      },
-      task: {
-        tag: "ul",
-        blockMd: "- [ ] ",
-        shortcut: "[] ",
-        attributes: {},
-        children: [
-          {
-            tag: "li",
-            attributes: {},
-            children: [
-              {
-                tag: "input",
-                attributes: { type: "checkbox" }
-              },
-              {
-                tag: "label",
-                caret: true,
-              }
-            ]
-          }
-        ]
-      }
-    },
-  };
-  
-  function getFirst(a, b) {
-    return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_PRECEDING ? b : a;
-  }
-  
 
 editor.addEventListener("beforeinput", (event) => {
+  const selection = window.getSelection();
   const range = event.getTargetRanges()[0];
-  const {startContainer, startOffset, endContainer, endOffset } = range;
-  const data = event.data;
-  const type = event.inputType;
-  console.log(range)
-  if (zwsNodes) scheduleZwsCleanup(zwsNodes);
-  let node = startContainer.nodeType === 3 ? startContainer.parentNode : startContainer;
-  
-  if (!node.getAttribute("data-write") && range.collapsed) {
-    let block = node.closest(".block > *");
-    let writeNode = block.querySelector("[data-write='true']");
-    console.log(writeNode.compareDocumentPosition(node))
-    let position = getFirst(node, writeNode) === node ? 0 : writeNode.textContent.length;
-    setCaretPosition(writeNode, "setStart", position);
+  const startContainer = range.startContainer;
+  const offset = range.startOffset;
+
+  if (event.data === " " && startContainer.textContent.startsWith("[]") && offset === 2) return addList(event, "ul", "checkbox")
+  if (event.data === " " && startContainer.textContent.startsWith("-") && offset === 1) return addList(event, "ul")
+  if (event.data === " " && startContainer.textContent.startsWith("1.") && offset === 2) return addList(event, "ol")
+  if (startContainer.textContent.startsWith("1.")) return addList(event, "ol")
+  if (startContainer.textContent.startsWith("- ")) return addList(event, "ul")
+  if (event.inputType === "insertParagraph" && startContainer.parentNode.nodeName === "LI") {
+   if (startContainer.parentNode.parentNode?.getAttribute("data-type") === "checkbox") {
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      startContainer.parentNode.appendChild(checkbox);
+    }
   }
 
-  if (data === "/" && range.collapsed) {
-    const prev = isWhitespaceOrPunct(startContainer.textContent.charAt(startOffset - 1));
-    const next = isWhitespaceOrPunct(startContainer.textContent.charAt(startOffset)); 
-    if (prev && next) openCommand(range, event);
-  }
+  if (event.data === "/") openMenu(event)
 
-  if (!range.collapsed && !formatEvent.includes(type)) rangeManager(event);
-  if (blockEvent.includes(type)) blockManager(event);
+
 })
 
-function openCommand(range, event) {
+function openMenu(event) {
+
+  const range = document.createRange();
+  const eventRange = event.getTargetRanges()[0];
+  const span = document.createElement("span");
+  span.innerText = event.data;
+  span.classList.add("menu-search");
   event.preventDefault();
+  range.setStart(eventRange.startContainer, eventRange.startOffset);
+  range.insertNode(span);
+  setCaretPosition(span, "setStart", 1);
+
   menu.showPopover();
+}
+ 
+function addList(event, type, attribute) {
+  event.preventDefault();
+  const range = event.getTargetRanges()[0];
+  const startContainer = range.startContainer;
+  const list = document.createElement(type);
+  const listItem = document.createElement("li");
+  listItem.innerHTML = '<br>';
+  list.appendChild(listItem);
+  listItem.textContent = startContainer.textContent.slice(range.startOffset, startContainer.textContent.length);
+  startContainer.parentNode.replaceWith(list);
+  if(attribute) list.classList.add("list");
+}
+
+
+editor.addEventListener("keydown", (event) => {
+  if (arrow.includes(event.key)) {
+    let selection = window.getSelection();
+    let offset = selection.focusOffset;
+    let end = selection.focusNode?.length;
+    if (event.key === "ArrowLeft" && offset === 0) caretManager(selection, event, "left")
+    if (event.key === "ArrowRight" && offset === end) caretManager(selection, event, "right")
+    if (event.key === "ArrowUp") caretManager(selection, event, "up")
+    if (event.key === "ArrowDown") caretManager(selection, event, "down")
+  }
+})
+
+function insertManager(event) {
 }
 
 function rangeManager(event) {
-  const eventRange = event.getTargetRanges()[0];
-  const {startContainer, startOffset, endContainer, endOffset } = eventRange;
-  let action;
-
-  if (startContainer !== endContainer) action = "internode";
-  else if (startOffset === 0 && endOffset === endContainer.textContent.length && !event.data) action = "fullnode";
-  else return;
-  console.log(action)
-
-  const range = document.createRange();
-  range.setStart(startContainer, startOffset);
-  range.setEnd(endContainer, endOffset);
-  event.preventDefault();
-  if (action === "internode") {
-    range.deleteContents(); // Supprime le contenu sélectionné
-
-    startContainer.textContent += (event.data || "") + endContainer.textContent;
-    endContainer.remove(); // Supprime le nœud de fin
-    setCaretPosition(startContainer, "setStart", event.data ? startOffset + 1 : startOffset);
-  } else if (action === "fullnode") {
-      const block = startContainer.parentNode.closest(".block > *");
-      const previous = block.previousElementSibling.querySelector("[data-write='true']");
-    if (previous && startContainer.textContent === "\u200B") {
-      block.remove();
-      setCaretPosition(previous, "setStart", previous.textContent.length);
-    } else {
-      console.log("add")
-      startContainer.textContent = "\u200B";
-      zwsNodes.push(startContainer);
-      setCaretPosition(startContainer, "setStart", 1);
-    }
-  }
+  console.log('a faire lol')
 }
 
-function blockManager(event) {
-  const eventRange = event.getTargetRanges()[0];
-  const {startContainer, startOffset, endContainer, endOffset } = eventRange;
-  const block = startContainer.target.closest(".block > *");
+function caretManager(selection, event, direction) {
+  console.log('edge:', edge(selection, direction))
+}
 
-  const blockType = block.getAttribute("data-type");
+function getCaretRect(selection) {
+  const range = selection.getRangeAt(0);
+  const rect = range.getBoundingClientRect();
+  const caretRect = {
+    top: rect.top + window.scrollY,
+    left: rect.left + window.scrollX,
+    width: rect.width,
+    height: rect.height,
+  };
+  console.log('getCaretRect:', caretRect);
+  return caretRect;
+}
+
+function getNextNode(selection, direction) {
+  let node = selection.focusNode.parentNode;
+  let index = editablesNodes.indexOf(node);
+  console.log('getNextNode: index:', index, 'direction:', direction);
+  return direction === "up" ? editablesNodes[index - 1] : editablesNodes[index + 1]
 }
 
 
+function edge(selection, direction) {
+  if (!selection || selection.rangeCount === 0) return;
+  const range = selection.getRangeAt(0);
+  const caretRects = range.getClientRects();
+  if (caretRects.length === 0) return;
+  const caretRect = caretRects[0];
+  const containerRect = selection.focusNode.parentNode.closest('[data-editable]').getBoundingClientRect();
+  console.log(selection.focusNode.parentNode)
+  const tolerance = 2;
 
+  console.log(containerRect)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-function scheduleZwsCleanup(zwsNode) {
-  clearTimeout(zwsTimeout);
-  zwsTimeout = setTimeout(() => {
-    zwsManager(zwsNode);
-  }, 1000);
-}
-
-function zwsManager(zwsNodes) {
-  zwsNodes.forEach(node => {
-    if (node.textContent.length > 1) {
-      let sel = window.getSelection();
-      if (sel.focusNode === node) {
-        let position = sel.focusOffset > node.textContent.indexOf("\u200B") ? sel.focusOffset - 1 : sel.focusOffset;
-        node.textContent = node.textContent.replace(/\u200B/g, "");
-        setCaretPosition(node, "setStart", position);
-      } else {
-        node.textContent = node.textContent.replace(/\u200B/g, "");
+ if (direction === "up") {
+      if (Math.abs(caretRect.top - containerRect.top) <= tolerance) {
+          console.log("Le caret est sur le bord supérieur du conteneur.");
+          return true;
       }
-      zwsNodes = zwsNodes.filter(n => n !== node);
-    }
-  });
+  } else if (direction === "down") {
+      if (Math.abs(caretRect.bottom - containerRect.bottom) <= tolerance) {
+          console.log("Le caret est sur le bord inférieur du conteneur.");
+          return true;
+      }
+  }
+
+  // Si aucune des conditions ci-dessus n'est remplie
+  return false;
 }
 
 
-  
-  
 
 
 
@@ -238,20 +151,6 @@ function zwsManager(zwsNodes) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-// Caret management functions
-  
 function setCaretPosition(node, method, position) {
     if (!node) throw new Error("Node does not exist");
     let range = document.createRange();
