@@ -16,9 +16,15 @@
 
 <div id="editor" contenteditable="true" spellcheck="false" class="block">
 <h1 data-editable>Simple applis de note</h1>
-<p data-editable>Une bibliothèque légère de rendu Markdown en temps réel pour le web, axée sur une manipulation fine du DOM. Ce projet offre une édition fluide de Markdown avec une prédiction instantanée des changements, tout en gardant une structure basée sur le DOM, sans besoin de re-parsing global.</p>
-<p data-editable>&ZeroWidthSpace;</p>
-<p data-editable>Lorem ipsum dolor sit amet, consectetur elit. Donec a diam lectus. Sed sit amet ipsum mauris.</p>	
+<p data-editable><br></p>
+<p data-editable>Il reste a faire le rangeManager, le insertManager. Configurer le json qui construit les éléments tel que les headings, paragraph et les listes. Il s'agit en fait de la priorité car ils sont nécessaire pour comprendre les blocks, l'ajout de data-editable, une supression correcte des éléments. l'ajout de contenteditable false sur les siblings de celui editables.</p>
+<p data-editable><br></p>
+<ul class="block">
+  <li data-list><input type="checkbox"><p data-editable>insertManager</p></li>
+  <li data-list><input type="checkbox"><p data-editable>rangeManager</p></li>
+  <li data-list><input type="checkbox"><p data-editable>caretManager</p></li>
+  <li data-list><input type="checkbox"><p data-editable>componentManager</p></li>
+</ul>
 </div>
 <div id="menu" popover>
   <ul>

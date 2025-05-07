@@ -101,18 +101,7 @@ u {
   display: inline;
 }
 
-li.placeholder::after {content: 'List items';}
-[data-type="task-list"] {
-  list-style: none;
-  position: relative;
 
-  input {
-    position: absolute;
-    left: 1.25em;
-    top: 50%;
-    transform: translateY(-50%);
-  }
-}
 
 .placeholder br {
   display: none;
@@ -124,24 +113,6 @@ pre {
   border-radius: 0.25em;
   border: 1px solid var(--clr-border);
   padding: 0.5em;
-}
-
-
-
-[data-type='checkbox'] {
-  list-style: none;
-  padding-left: 1.5em;
-
-  li {
-    position: relative;
-  }
-
-  input {
-    position: absolute;
-    left: -1.25em;
-    top: 50%;
-    transform: translateY(-50%);
-  }
 }
 
 #menu {
@@ -195,23 +166,16 @@ span.menu-search {
   transition: background-color 0.2s ease-in-out;
 }
 
-.list {
-  display: flex;
-  list-style: none;
-  padding: 0;
-  gap: 1em;
-  overflow-x: scroll;
-  scroll-snap-align: start;
-  scroll-snap-type: x mandatory;
 
-  li {
-    scrollbar-width: none;
-    margin-block: 1em;
-    padding: 0.5em;
-    min-width: 300px;
-    min-height: 150px;
-    overflow-y: scroll;
-    background-color: var(--clr-card-bg);
-    border-radius: 0.25em;
+li:has(input) {
+  display: block;
+  position: relative;
+  gap: 0.5em;
+
+  input {
+    position: absolute;
+    left: -1.5em;
+    top: 50%;
+    transform: translateY(-50%);
   }
 }

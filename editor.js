@@ -5,6 +5,88 @@ let savedX = null;
 let editablesNodes = Array.from(document.querySelectorAll("[data-editable]"));
 const isWhitespaceOrPunct = (char) => !char || /\s|[.,!?;:'"(){}[\]]/.test(char);
 
+const components = {
+  'Heading 1': {
+    tag: 'h1',
+    attribute: null,
+    shorcut: '# ',
+    markdown: '# ',
+    editable: true,
+    onEnter: 'regular',
+  },
+  'Heading 2': {
+    tag: 'h2',
+    attribute: null,
+    shorcut: '## ',
+    markdown: '## ',
+    editable: true,
+    onEnter: 'regular',
+  },
+  'Heading 3': {
+    tag: 'h3',
+    attribute: null,
+    shorcut: '### ',
+    markdown: '### ',
+    editable: true,
+    onEnter: 'regular',
+  },
+  'Paragraph': {
+    tag: 'p',
+    attribute: null,
+    shorcut: '',
+    markdown: '',
+    editable: true,
+    onEnter: 'regular',
+  },
+  'Ordered List': {
+    tag: 'ol',
+    attribute: null,
+    shorcut: '1. ',
+    markdown: '1. ',
+    child: {
+      tag: 'li',
+      attribute: null,
+      editable: true,
+      onEnter: 'list-item',
+    }
+  },
+  'Unordered List': {
+    tag: 'ul',
+    attribute: null,
+    shorcut: '- ',
+    markdown: '- ',
+    child: {
+      tag: 'li',
+      attribute: null,
+      editable: true,
+      onEnter: 'list-item',
+    }
+  },
+  'Checkbox List': {
+    tag: 'ul',
+    attribute: 'checkbox',
+    shorcut: '[]',
+    markdown: '[]',
+    child: {
+      tag: 'li',
+      attribute: 'data-list',
+      child: [
+        {
+          tag: 'input',
+          attribute: { type: 'checkbox' },
+        },
+        {
+          tag: 'p',
+          attribute: null,
+          onEnter: 'list-item',
+          editable: true,
+        }
+      ]
+    }
+  }
+
+}
+
 
 editor.addEventListener("beforeinput", (event) => {
   const selection = window.getSelection();
@@ -44,107 +126,57 @@ function openMenu(event) {
 
   menu.showPopover();
 }
- 
-function addList(event, type, attribute) {
-  event.preventDefault();
-  const range = event.getTargetRanges()[0];
-  const startContainer = range.startContainer;
-  const list = document.createElement(type);
-  const listItem = document.createElement("li");
-  listItem.innerHTML = '<br>';
-  list.appendChild(listItem);
-  listItem.textContent = startContainer.textContent.slice(range.startOffset, startContainer.textContent.length);
-  startContainer.parentNode.replaceWith(list);
-  if(attribute) list.classList.add("list");
-}
-
 
 editor.addEventListener("keydown", (event) => {
-  if (arrow.includes(event.key)) {
-    let selection = window.getSelection();
-    let offset = selection.focusOffset;
-    let end = selection.focusNode?.length;
-    if (event.key === "ArrowLeft" && offset === 0) caretManager(selection, event, "left")
-    if (event.key === "ArrowRight" && offset === end) caretManager(selection, event, "right")
-    if (event.key === "ArrowUp") caretManager(selection, event, "up")
-    if (event.key === "ArrowDown") caretManager(selection, event, "down")
-  }
-})
+  if (arrow.includes(event.key)) caretManager(event)
+});
+
+
 
 function insertManager(event) {
 }
 
 function rangeManager(event) {
-  console.log('a faire lol')
-}
-
-function caretManager(selection, event, direction) {
-  console.log('edge:', edge(selection, direction))
-}
-
-function getCaretRect(selection) {
-  const range = selection.getRangeAt(0);
-  const rect = range.getBoundingClientRect();
-  const caretRect = {
-    top: rect.top + window.scrollY,
-    left: rect.left + window.scrollX,
-    width: rect.width,
-    height: rect.height,
-  };
-  console.log('getCaretRect:', caretRect);
-  return caretRect;
-}
-
-function getNextNode(selection, direction) {
-  let node = selection.focusNode.parentNode;
-  let index = editablesNodes.indexOf(node);
-  console.log('getNextNode: index:', index, 'direction:', direction);
-  return direction === "up" ? editablesNodes[index - 1] : editablesNodes[index + 1]
 }
 
 
-function edge(selection, direction) {
-  if (!selection || selection.rangeCount === 0) return;
-  const range = selection.getRangeAt(0);
-  const caretRects = range.getClientRects();
-  if (caretRects.length === 0) return;
-  const caretRect = caretRects[0];
-  const containerRect = selection.focusNode.parentNode.closest('[data-editable]').getBoundingClientRect();
-  console.log(selection.focusNode.parentNode)
-  const tolerance = 2;
 
-  console.log(containerRect)
+let savedCaretX = null;
 
- if (direction === "up") {
-      if (Math.abs(caretRect.top - containerRect.top) <= tolerance) {
-          console.log("Le caret est sur le bord supérieur du conteneur.");
-          return true;
-      }
-  } else if (direction === "down") {
-      if (Math.abs(caretRect.bottom - containerRect.bottom) <= tolerance) {
-          console.log("Le caret est sur le bord inférieur du conteneur.");
-          return true;
-      }
+function caretManager(event) {
+  let selection = window.getSelection();
+  let node = selection.focusNode.nodeType === Node.TEXT_NODE ? selection.focusNode.parentNode : selection.focusNode;
+  let direction = event.key === "ArrowUp" || event.key === "ArrowLeft" ? "up" : event.key === "ArrowDown" || event.key === "ArrowRight" ? "down" : null;  
+  let next = getNextNode(node, direction);
+  if (event.key === "ArrowLeft" || event.key === "ArrowRight" || savedCaretX === null) {
+    savedCaretX = selection.getRangeAt(0).getBoundingClientRect().x;
   }
 
-  // Si aucune des conditions ci-dessus n'est remplie
-  return false;
+  requestAnimationFrame(() => {
+    let newSelection = window.getSelection();
+    let newNode = newSelection.focusNode.nodeType === Node.TEXT_NODE ? newSelection.focusNode.parentNode : newSelection.focusNode;
+    console.log(newNode, node, next)
+    if (newNode.hasAttribute("data-editable") || newNode.closest("[data-editable]")) return;
+    console.log('passed!')
+    if (event.key === "ArrowUp" || event.key === "ArrowDown" && next) {
+      console.log(next)
+      let rect = next.getBoundingClientRect();
+      let y = event.key === "ArrowUp" ? rect.top + 1 : rect.bottom - 1;
+      let clampedX = Math.max(rect.left, Math.min(savedCaretX, rect.right));
+      let range = document.caretPositionFromPoint(clampedX, y);
+      
+      console.log(range)
+      setCaretPosition(range.offsetNode, "setStart", range.offset);
+    }
+  })
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+function getNextNode(element, direction) {
+  let node = element.closest("[data-editable]");
+  let index = editablesNodes.indexOf(node);
+  return direction === "up" ? editablesNodes[index - 1] : editablesNodes[index + 1]
+}
 
 
 
