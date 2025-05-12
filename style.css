@@ -181,7 +181,7 @@ li:has(input) {
   }
 }
 
-[data-editable]:has(> br)::after {
+[data-editable]:not(p):has(> br)::after {
   content: 'type here';
   position: absolute;
   inset: 0;

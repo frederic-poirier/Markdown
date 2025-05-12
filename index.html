@@ -16,16 +16,101 @@
 
 <div id="editor" contenteditable="true" spellcheck="false" class="block">
 <h1 data-editable>Simple applis de note</h1>
+<hr>
 <p data-editable><br></p>
 <p data-editable class="columns">Il reste a faire le rangeManager, le insertManager. Configurer le json qui construit les éléments tel que les headings, paragraph et les listes. Il s'agit en fait de la priorité car ils sont nécessaire pour comprendre les blocks, l'ajout de data-editable, une supression correcte des éléments. l'ajout de contenteditable false sur les siblings de celui editables.</p>
 <p data-editable><br></p>
 <ul class="block">
-  <h3>not editable</h3>
   <li data-list><input type="checkbox"><p data-editable>insertManager</p></li>
   <li data-list><input type="checkbox"><p data-editable>rangeManager</p></li>
-  <li data-list><input type="checkbox"><p data-editable>caretManager</p></li>
+  <li data-list><input type="checkbox" checked><p data-editable>caretManager</p></li>
   <li data-list><input type="checkbox"><p data-editable>componentManager</p></li>
 </ul>
+<p data-editable><br></p>
+<hr>
+<p data-editable><br></p>
+<pre><code data-editable class="language-js">const components = {
+  'Heading 1': {
+    tag: 'h1',
+    attribute: null,
+    shorcut: '# ',
+    markdown: '# ',
+    editable: true,
+    onEnter: 'regular',
+  },
+  'Heading 2': {
+    tag: 'h2',
+    attribute: null,
+    shorcut: '## ',
+    markdown: '## ',
+    editable: true,
+    onEnter: 'regular',
+  },
+  'Heading 3': {
+    tag: 'h3',
+    attribute: null,
+    shorcut: '### ',
+    markdown: '### ',
+    editable: true,
+    onEnter: 'regular',
+  },
+  'Paragraph': {
+    tag: 'p',
+    attribute: null,
+    shorcut: '',
+    markdown: '',
+    editable: true,
+    onEnter: 'regular',
+  },
+  'Ordered List': {
+    tag: 'ol',
+    attribute: null,
+    shorcut: '1. ',
+    markdown: '1. ',
+    child: {
+      tag: 'li',
+      attribute: null,
+      editable: true,
+      onEnter: 'list-item',
+    }
+  },
+  'Unordered List': {
+    tag: 'ul',
+    attribute: null,
+    shorcut: '- ',
+    markdown: '- ',
+    child: {
+      tag: 'li',
+      attribute: null,
+      editable: true,
+      onEnter: 'list-item',
+    }
+  },
+  'Checkbox List': {
+    tag: 'ul',
+    attribute: 'checkbox',
+    shorcut: '[]',
+    markdown: '[]',
+    child: {
+      tag: 'li',
+      attribute: 'data-list',
+      child: [
+        {
+          tag: 'input',
+          attribute: { type: 'checkbox' },
+        },
+        {
+          tag: 'p',
+          attribute: null,
+          onEnter: 'list-item',
+          editable: true,
+        }
+      ]
+    }
+  }
+}</code>
+</pre>
+<p data-editable><br></p>
 </div>
 <div id="menu">
   <ul>
@@ -40,6 +125,13 @@
     <li><button>Task list</button></li>
   </ul>
 </div>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+
+<!-- and it's easy to individually load additional languages -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/go.min.js"></script>
+
+<script>hljs.highlightAll();</script>
 <script  src="editor.js"></script> 
 </body>
 </html>
